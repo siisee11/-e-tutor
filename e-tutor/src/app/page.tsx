@@ -1,5 +1,6 @@
 'use client';
 
+import SphereCharacter from '@/components/sphere-character';
 import { CalendarIcon } from 'lucide-react';
 
 export default function Home() {
@@ -18,10 +19,13 @@ export default function Home() {
           </div>
           <CalendarIcon className="text-amber-200 w-6 h-6" />
         </div>
-        <div className="flex-1 px-4 py-6">
+        <div className="flex-1 flex flex-col gap-4 px-4 py-6">
           <div className="flex justify-between mb-4">
             <span className="text-amber-400">Monday</span>
             <span className="text-amber-400">Today</span>
+          </div>
+          <div className="flex justify-center items-center">
+            <SphereCharacter />
           </div>
           <div className="bg-amber-800 rounded-3xl p-6 shadow-lg">
             <div className="text-6xl mb-2">9</div>
