@@ -11,9 +11,6 @@ export default function IPhoneFrame({
         <div className="relative w-full h-full bg-white overflow-clip">
           {children}
         </div>
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-4 py-2 shadow-md">
-          <p className="text-sm font-semibold">not yet retrieved</p>
-        </div>
       </div>
     </div>
   );
