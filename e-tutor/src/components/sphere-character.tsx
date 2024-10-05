@@ -44,8 +44,7 @@ const SphereCharacter: React.FC<SphereCharacterProps> = ({
       ? frequencies.reduce((max, val) => Math.max(max, val), -Infinity)
       : 0;
 
-  console.log(maxAmplitude);
-  const normalizedAmplitude = Math.min(maxAmplitude / 0.9, 1);
+  const normalizedAmplitude = Math.min(maxAmplitude / 1, 1);
 
   // Apply a smoothing factor to make the mouth movement more natural
   const smoothingFactor = 0.3; // Adjust between 0 (no smoothing) and 1 (max smoothing)
