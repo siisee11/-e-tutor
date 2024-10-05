@@ -7,7 +7,7 @@ import {
   ItemType,
   RealtimeClient,
 } from '@openai/realtime-api-beta/lib/client.js';
-import { CalendarIcon, X, Zap } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
@@ -76,7 +76,7 @@ export default function Home() {
    * - Timing delta for event log displays
    */
   const clientCanvasRef = useRef<HTMLCanvasElement>(null);
-  const serverCanvasRef = useRef<HTMLCanvasElement>(null);
+  // const serverCanvasRef = useRef<HTMLCanvasElement>(null);
   const eventsScrollHeightRef = useRef(0);
   const eventsScrollRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<string>(new Date().toISOString());
@@ -96,6 +96,9 @@ export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
+  const [frequencies, setFrequencies] = useState<Float32Array>(
+    new Float32Array([0])
+  );
 
   /**
    * When you click the API key
@@ -154,6 +157,7 @@ export default function Home() {
     setRealtimeEvents([]);
     setItems([]);
     setMemoryKv({});
+    setFrequencies(new Float32Array([0]));
 
     const client = clientRef.current;
     client.disconnect();
@@ -251,58 +255,65 @@ export default function Home() {
 
     const wavRecorder = wavRecorderRef.current;
     const clientCanvas = clientCanvasRef.current;
-    let clientCtx: CanvasRenderingContext2D | null = null;
+    const clientCtx: CanvasRenderingContext2D | null = null;
 
     const wavStreamPlayer = wavStreamPlayerRef.current;
-    const serverCanvas = serverCanvasRef.current;
-    let serverCtx: CanvasRenderingContext2D | null = null;
+    // const serverCanvas = serverCanvasRef.current;
+    // let serverCtx: CanvasRenderingContext2D | null = null;
 
     const render = () => {
       if (isLoaded) {
-        if (clientCanvas) {
-          if (!clientCanvas.width || !clientCanvas.height) {
-            clientCanvas.width = clientCanvas.offsetWidth;
-            clientCanvas.height = clientCanvas.offsetHeight;
-          }
-          clientCtx = clientCtx || clientCanvas.getContext('2d');
-          if (clientCtx) {
-            clientCtx.clearRect(0, 0, clientCanvas.width, clientCanvas.height);
-            const result = wavRecorder.recording
-              ? wavRecorder.getFrequencies('voice')
-              : { values: new Float32Array([0]) };
-            WavRenderer.drawBars(
-              clientCanvas,
-              clientCtx,
-              result.values,
-              '#0099ff',
-              10,
-              0,
-              8
-            );
-          }
-        }
-        if (serverCanvas) {
-          if (!serverCanvas.width || !serverCanvas.height) {
-            serverCanvas.width = serverCanvas.offsetWidth;
-            serverCanvas.height = serverCanvas.offsetHeight;
-          }
-          serverCtx = serverCtx || serverCanvas.getContext('2d');
-          if (serverCtx) {
-            serverCtx.clearRect(0, 0, serverCanvas.width, serverCanvas.height);
-            const result = wavStreamPlayer.analyser
-              ? wavStreamPlayer.getFrequencies('voice')
-              : { values: new Float32Array([0]) };
-            WavRenderer.drawBars(
-              serverCanvas,
-              serverCtx,
-              result.values,
-              '#009900',
-              10,
-              0,
-              8
-            );
-          }
-        }
+        // server frequency
+        const result = wavStreamPlayer.analyser
+          ? wavStreamPlayer.getFrequencies('voice')
+          : { values: new Float32Array([0]) };
+        setFrequencies(result.values);
+
+        // if (clientCanvas) {
+        //   if (!clientCanvas.width || !clientCanvas.height) {
+        //     clientCanvas.width = clientCanvas.offsetWidth;
+        //     clientCanvas.height = clientCanvas.offsetHeight;
+        //   }
+        //   clientCtx = clientCtx || clientCanvas.getContext('2d');
+        //   if (clientCtx) {
+        //     clientCtx.clearRect(0, 0, clientCanvas.width, clientCanvas.height);
+        //     const result = wavRecorder.recording
+        //       ? wavRecorder.getFrequencies('voice')
+        //       : { values: new Float32Array([0]) };
+        //     WavRenderer.drawBars(
+        //       clientCanvas,
+        //       clientCtx,
+        //       result.values,
+        //       '#0099ff',
+        //       10,
+        //       0,
+        //       8
+        //     );
+        //   }
+        // }
+        // if (serverCanvas) {
+        //   // if (!serverCanvas.width || !serverCanvas.height) {
+        //   //   serverCanvas.width = serverCanvas.offsetWidth;
+        //   //   serverCanvas.height = serverCanvas.offsetHeight;
+        //   // }
+        //   // serverCtx = serverCtx || serverCanvas.getContext('2d');
+        //   // if (serverCtx) {
+        //   //   serverCtx.clearRect(0, 0, serverCanvas.width, serverCanvas.height);
+        //     // const result = wavStreamPlayer.analyser
+        //     //   ? wavStreamPlayer.getFrequencies('voice')
+        //     //   : { values: new Float32Array([0]) };
+        //     // setFrequencies(result.values);
+        //     // WavRenderer.drawBars(
+        //     //   serverCanvas,
+        //     //   serverCtx,
+        //     //   result.values,
+        //     //   '#009900',
+        //     //   10,
+        //     //   0,
+        //     //   8
+        //     // );
+        //   }
+        // }
         window.requestAnimationFrame(render);
       }
     };
@@ -464,7 +475,7 @@ export default function Home() {
             <span className="text-amber-400">Today</span>
           </div>
           <div className="flex justify-center items-center">
-            <SphereCharacter />
+            <SphereCharacter frequencies={frequencies} />
           </div>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col bg-amber-800 rounded-3xl p-6 shadow-lg h-2/5 overflow-auto no-scrollbar">
@@ -492,20 +503,15 @@ export default function Home() {
               {isConnected ? 'End Conversation' : 'Start Conversation'}
             </button>
             <div className="visualization">
-              <div className="visualization-entry client">
+              {/* <div className="visualization-entry client">
                 <canvas ref={clientCanvasRef} />
-              </div>
-              <div className="visualization-entry server">
+              </div> */}
+              {/* <div className="visualization-entry server">
                 <canvas ref={serverCanvasRef} />
-              </div>
+              </div> */}
             </div>
             <div className="content-actions">
               <div className="flex items-center space-x-4">
-                <div className="flex items-center">
-                  <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                    VAD
-                  </span>
-                </div>
                 {/* <div className="flex-grow" /> */}
                 {/* {isConnected && canPushToTalk && (
                   <button

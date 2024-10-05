@@ -1,68 +1,15 @@
 // SphereCharacter.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface SphereCharacterProps {
   size?: number;
+  frequencies: Float32Array;
 }
 
-const SphereCharacter: React.FC<SphereCharacterProps> = ({ size = 100 }) => {
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  });
-  const [divPos, setDivPos] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }>({
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  });
-  const divRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({
-        x: e.clientX,
-        y: e.clientY,
-      });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
-
-  useEffect(() => {
-    const updateDivPos = () => {
-      if (divRef.current) {
-        const rect = divRef.current.getBoundingClientRect();
-        setDivPos({
-          x: rect.left,
-          y: rect.top,
-          width: rect.width,
-          height: rect.height,
-        });
-      }
-    };
-
-    // Update position on mount and when the window is resized
-    updateDivPos();
-    window.addEventListener('resize', updateDivPos);
-
-    return () => {
-      window.removeEventListener('resize', updateDivPos);
-    };
-  }, []);
-
-  const adjustedMouseX = mousePos.x - divPos.x;
-  const adjustedMouseY = mousePos.y - divPos.y;
-
+const SphereCharacter: React.FC<SphereCharacterProps> = ({
+  size = 100,
+  frequencies,
+}) => {
   // Scaling factors based on size
   const scale = size / 200; // 200 is the default size
   const headRadius = 80 * scale;
@@ -82,27 +29,41 @@ const SphereCharacter: React.FC<SphereCharacterProps> = ({ size = 100 }) => {
     y: headCenter.y - eyeOffsetY,
   };
 
-  // Pupil sizes and movement radius
+  // Pupil sizes
   const pupilRadius = 10 * scale;
-  const pupilMoveRadius = 8 * scale;
 
-  const leftPupil = calculatePupilPosition(
-    leftEye.x,
-    leftEye.y,
-    adjustedMouseX,
-    adjustedMouseY,
-    pupilMoveRadius
-  );
-  const rightPupil = calculatePupilPosition(
-    rightEye.x,
-    rightEye.y,
-    adjustedMouseX,
-    adjustedMouseY,
-    pupilMoveRadius
-  );
+  // Mouth positions and sizes
+  const mouthOffsetY = 40 * scale;
+  const mouthWidth = 30 * scale;
+  const minMouthHeight = 0.1; // Adjusted for more sensitivity
+  const maxMouthHeight = 25 * scale; // Adjusted for more sensitivity
+
+  // Calculate the maximum amplitude from frequencies
+  const maxAmplitude =
+    frequencies.length > 0
+      ? frequencies.reduce((max, val) => Math.max(max, val), -Infinity)
+      : 0;
+
+  console.log(maxAmplitude);
+  const normalizedAmplitude = Math.min(maxAmplitude / 0.9, 1);
+
+  // Apply a smoothing factor to make the mouth movement more natural
+  const smoothingFactor = 0.3; // Adjust between 0 (no smoothing) and 1 (max smoothing)
+  const [smoothedAmplitude, setSmoothedAmplitude] = useState(0);
+
+  useEffect(() => {
+    setSmoothedAmplitude(
+      (prev) =>
+        prev * smoothingFactor + normalizedAmplitude * (1 - smoothingFactor)
+    );
+  }, [normalizedAmplitude]);
+
+  // Calculate mouth height based on smoothed amplitude
+  const mouthHeight =
+    minMouthHeight + (maxMouthHeight - minMouthHeight) * smoothedAmplitude;
 
   return (
-    <div className="w-fit h-fit flex justify-center items-center" ref={divRef}>
+    <div className="w-fit h-fit flex justify-center items-center">
       <svg width={size} height={size}>
         {/* Head */}
         <circle
@@ -123,12 +84,7 @@ const SphereCharacter: React.FC<SphereCharacterProps> = ({ size = 100 }) => {
           strokeWidth={1 * scale}
         />
         {/* Left Pupil */}
-        <circle
-          cx={leftPupil.x}
-          cy={leftPupil.y}
-          r={pupilRadius}
-          fill="#000000"
-        />
+        <circle cx={leftEye.x} cy={leftEye.y} r={pupilRadius} fill="#000000" />
         {/* Right Eye */}
         <circle
           cx={rightEye.x}
@@ -140,33 +96,24 @@ const SphereCharacter: React.FC<SphereCharacterProps> = ({ size = 100 }) => {
         />
         {/* Right Pupil */}
         <circle
-          cx={rightPupil.x}
-          cy={rightPupil.y}
+          cx={rightEye.x}
+          cy={rightEye.y}
           r={pupilRadius}
           fill="#000000"
+        />
+        {/* Mouth */}
+        <ellipse
+          cx={headCenter.x}
+          cy={headCenter.y + mouthOffsetY}
+          rx={mouthWidth}
+          ry={mouthHeight}
+          fill="#000"
+          stroke="#000"
+          strokeWidth={1 * scale}
         />
       </svg>
     </div>
   );
-};
-
-const calculatePupilPosition = (
-  eyeX: number,
-  eyeY: number,
-  mouseX: number,
-  mouseY: number,
-  pupilMoveRadius: number
-): { x: number; y: number } => {
-  const dx = mouseX - eyeX;
-  const dy = mouseY - eyeY;
-  const angle = Math.atan2(dy, dx);
-
-  const distance = Math.min(pupilMoveRadius, Math.hypot(dx, dy));
-
-  const pupilX = eyeX + distance * Math.cos(angle);
-  const pupilY = eyeY + distance * Math.sin(angle);
-
-  return { x: pupilX, y: pupilY };
 };
 
 export default SphereCharacter;
